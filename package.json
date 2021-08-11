@@ -1,0 +1,76 @@
+{
+  "name": "@resolute/coerce",
+  "version": "0.0.0",
+  "description": "Coerce inputs to chainable types, formatters, sanitizers, and validators.",
+  "type": "module",
+  "main": "./",
+  "types": "./",
+  "files": [
+    "*.js",
+    "*.d.ts"
+  ],
+  "scripts": {
+    "build": "npm run clean && tsc && prettier --write *.js *.d.ts && (eslint --fix *.js > /dev/null 2>&1; true)",
+    "release": "np",
+    "prepublishOnly": "npm test && npm run build",
+    "clean": "del-cli *.js *.js.map *.d.ts test/*.js test/*.js.map test/*.d.ts",
+    "test": "c8 ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/resolute/coerce.git"
+  },
+  "bugs": {
+    "url": "https://github.com/resolute/coerce/issues"
+  },
+  "homepage": "https://github.com/resolute/coerce",
+  "author": "Adam Chalemian <adam@chal.net>",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^16.4.12",
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "ava": "^3.15.0",
+    "c8": "^7.8.0",
+    "codecov": "^3.8.3",
+    "del-cli": "^4.0.1",
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-typescript": "^12.3.1",
+    "eslint-plugin-import": "^2.24.0",
+    "np": "^7.5.0",
+    "prettier": "^2.3.2",
+    "ts-node": "^10.2.0",
+    "typescript": "^4.3.5"
+  },
+  "keywords": [
+    "coerce",
+    "validation",
+    "sanitization",
+    "types",
+    "input"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "ISC",
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "nonSemVerExperiments": {
+      "configurableModuleFormat": true
+    },
+    "nodeArguments": [
+      "--loader=ts-node/esm"
+    ]
+  },
+  "c8": {
+    "reporter": [
+      "text",
+      "html",
+      "lcov"
+    ]
+  }
+}
