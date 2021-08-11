@@ -45,7 +45,7 @@ fail('{ function toString() { return "1"; } }', string);
 fail('{ function noToStringMethod() { return "1"; } }', string);
 
 // trim
-pass("' foo\t'", 'foo', trim);
+pass("' \t foo \\n \t'", 'foo', trim);
 
 // spaces
 // eslint-disable-next-line no-template-curly-in-string

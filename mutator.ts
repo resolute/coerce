@@ -13,7 +13,7 @@ export const safe = (value: string) =>
 * the string.
 */
 export const trim = (value: string) =>
-  value.replace(/^\s*/, '').replace(/\s*$/, '');
+  value.trim();
 
 /**
 * Replace all SPACE-like characters with a regular SPACE. Replace continuous
@@ -25,7 +25,7 @@ export const spaces = (value: string) =>
   value
     .replace(
       // eslint-disable-next-line no-irregular-whitespace
-      /[\u00A0\u1680​\u180E\u2000-\u2009\u200A​\u200B\u202F\u205F​\u3000\uFEFF]/g,
+      /[\u00A0\u1680​\u180E\u2000-\u200B\u202F\u205F​\u3000\uFEFF]/g,
       ' ',
     )
     .replace(/\s+/g, ' ');
