@@ -1,168 +1,189 @@
 /* eslint-disable no-eval */
-import test from 'ava';
+import test, { Macro } from 'ava';
 import {
   coerce,
-  string, safe, nonEmpty, spaces, trim, quotes, proper, postalCodeUs5,
+  string, safe, nonempty, spaces, trim, quotes, proper, postalCodeUs5,
   boolean,
   array,
   number, positive, negative,
-  limit, split, within, email, phone, phone10, prettyPhone, integer, nonZero, date,
+  limit, split, within, email, phone, phone10, prettyPhone, integer, nonzero, date,
 } from '../index.js';
 
-const pass = <S, T extends (arg: any) => any>(input: string, expected: S, ...sanitizers: T[]) => {
-  test(`${input} ✅ ${sanitizers.map(({ name }) => name).join(', ')}`,
-    (t) => t.deepEqual(
-      coerce(eval(input)).to(...sanitizers).or(Error),
-      expected,
-    ));
+const pass: Macro<any, any> = (t, command, input, expected) => {
+  t.deepEqual(command(eval(input)), expected);
 };
+pass.title = (providedTitle = '', _command, input, expected) =>
+  `${providedTitle} ${input} = ${expected} (${typeof expected})`.trim();
 
-const fail = <T extends (arg: any) => any>(input: string, ...sanitizers: T[]) => {
-  const expected = new Error('The expected error that coerce threw.');
-  expected.name = 'ExpectedError';
-  test(`${input} ❌ ${sanitizers.map(({ name }) => name).join(', ')}`,
-    (t) => {
-      t.throws(() => {
-        coerce(eval(input)).to(...sanitizers).or(expected);
-      }, { is: expected });
-    });
+const fail: Macro<any> = (t, command, input) => {
+  t.throws(() => { command(eval(input)); }, { instanceOf: Error });
 };
+fail.title = (providedTitle = '', _command, input) =>
+  `${providedTitle} ${input} TypeError`.trim();
 
 // string
-pass("'1'", '1', string);
-pass('1', '1', string);
-fail('true', string);
-fail('Symbol(1)', string);
-fail('new Error("foo")', string);
-fail('Buffer.from("foo")', string);
-fail('["1"]', string);
-fail('NaN', string);
-fail('Infinity', string);
-fail('null', string);
-fail('undefined', string);
-fail('{}', string);
-fail('{ function toString() { return "1"; } }', string);
-fail('{ function noToStringMethod() { return "1"; } }', string);
+test(pass, coerce(string), "'1'", '1');
+test(pass, coerce(string), '1', '1');
+test(fail, coerce(string), 'true');
+test(fail, coerce(string), 'Symbol(1)');
+test(fail, coerce(string), 'new Error("foo")');
+test(fail, coerce(string), 'Buffer.from("foo")');
+test(fail, coerce(string), '["1"]');
+test(fail, coerce(string), '-Infinity');
+test(fail, coerce(string), 'null');
+test(fail, coerce(string), 'undefined');
+test(fail, coerce(string), '{}');
+test(fail, coerce(string), '{ function toString() { return "1"; } }');
+test(fail, coerce(string), '{ function noToStringMethod() { return "1"; } }');
 
 // trim
-pass("' \t foo \\n \t'", 'foo', trim);
+test(pass, coerce(trim), "' \t foo \\n \t'", 'foo');
 
 // spaces
 // eslint-disable-next-line no-template-curly-in-string
-pass('`${String.fromCharCode(0x200A)}foo `', ' foo ', spaces);
+test(pass, coerce(spaces), '`${String.fromCharCode(0x200A)}foo `', ' foo ');
 
 // nonEmpty
-pass('" "', ' ', nonEmpty);
+test(pass, coerce(nonempty), '" "', ' ');
 
 // safe
-pass('\'INSERT INTO `foo` VALUES ("bar")\'', 'INSERT INTO foo VALUES bar', safe);
+test(pass, coerce(safe), '\'INSERT INTO `foo` VALUES ("bar")\'', 'INSERT INTO foo VALUES bar');
 
 // proper
-pass("'abc company'", 'Abc Company', quotes, proper);
-pass("'ABC company'", 'ABC Company', quotes, proper);
-pass('"john q. o\'donnel, III"', 'John Q O’Donnel, III', quotes, proper);
-pass("'VON Trap'", 'von Trap', quotes, proper);
+test(pass, coerce(quotes, proper), "'abc company'", 'Abc Company');
+test(pass, coerce(quotes, proper), "'ABC company'", 'ABC Company');
+test(pass, coerce(quotes, proper), '"john q. o\'donnel, III"', 'John Q O’Donnel, III');
+test(pass, coerce(quotes, proper), "'VON Trap'", 'von Trap');
 
 // Postal Code US
-pass("'10001-1234'", '10001', postalCodeUs5);
-pass("'07417'", '07417', postalCodeUs5);
-pass("'07417-1111'", '07417', postalCodeUs5);
-fail("'0741'", postalCodeUs5);
-fail('10001', postalCodeUs5); // numbers not allowed because leading 0’s mess things up
+test(pass, coerce(postalCodeUs5), "'10001-1234'", '10001');
+test(pass, coerce(postalCodeUs5), "'07417'", '07417');
+test(pass, coerce(postalCodeUs5), "'07417-1111'", '07417');
+test(fail, coerce(postalCodeUs5), "'0741'");
+test(fail, coerce(postalCodeUs5), '10001'); // numbers not allowed because leading 0’s mess things up
 
 // boolean
 const trueOrFalse = boolean();
 Object.defineProperty(trueOrFalse, 'name', { value: 'boolean' });
-pass('undefined', false, trueOrFalse);
-pass('null', false, trueOrFalse);
-pass("''", false, trueOrFalse);
-pass('false', false, trueOrFalse);
-pass("'false'", false, trueOrFalse);
-pass("'0'", false, trueOrFalse);
-pass('0', false, trueOrFalse);
-pass('({})', true, trueOrFalse);
-pass('new Error()', true, trueOrFalse);
-pass('1', true, trueOrFalse);
-pass("'foo'", true, trueOrFalse);
+test(pass, coerce(trueOrFalse), 'undefined', false);
+test(pass, coerce(trueOrFalse), '(null)', false);
+test(pass, coerce(trueOrFalse), "''", false);
+test(pass, coerce(trueOrFalse), 'false', false);
+test(pass, coerce(trueOrFalse), "'false'", false);
+test(pass, coerce(trueOrFalse), "'0'", false);
+test(pass, coerce(trueOrFalse), '0', false);
+test(pass, coerce(trueOrFalse), '({})', true);
+test(pass, coerce(trueOrFalse), 'new Error()', true);
+test(pass, coerce(trueOrFalse), '1', true);
+test(pass, coerce(trueOrFalse), "'foo'", true);
 
 // array
-pass("new Map([[1, '1']])", [[1, '1']], array);
-pass("new Set(['1', '2'])", ['1', '2'], array);
-pass("['1']", ['1'], array);
-pass("'123'", ['123'], array); // not ['1', '2', '3'] even though Strings are iterable
-pass("Buffer.from('123')", [49, 50, 51], array); // Buffer will be char codes
-pass('null', [null], array);
-pass('true', [true], array);
-pass('undefined', [undefined], array);
-pass('new WeakSet()', [new WeakSet()], array); // WeakSet non-iterable, so it gets wrapped in array
+test(pass, coerce(array), "new Map([[1, '1']])", [[1, '1']]);
+test(pass, coerce(array), "new Set(['1', '2'])", ['1', '2']);
+test(pass, coerce(array), "['1']", ['1']);
+test(pass, coerce(array), "'123'", ['123']); // not ['1', '2', '3'] even though Strings are iterable
+test(pass, coerce(array), "Buffer.from('123')", [49, 50, 51]); // Buffer will be char codes
+test(pass, coerce(array), 'true', [true]);
+test(pass, coerce(array), 'undefined', [undefined]);
+test(pass, coerce(array), 'new WeakSet()', [new WeakSet()]); // WeakSet non-iterable, so it gets wrapped in array
 
 // number
-fail('NaN', number);
-fail('Infinity', number);
-fail("'foo'", number);
-fail("''", number);
-fail("'-1.234.5'", number);
-fail('0', positive);
-fail('0', negative);
-pass('0o10', 8, number);
-pass('0xff', 255, number);
-pass('2e3', 2000, number);
-pass('1n', 1, number);
-pass('1', 1, number);
-pass('1', 1, number, positive);
-pass("'-1.234'", -1.234, number);
-pass("'0'", 0, number);
-pass('-0.5', -0.5, number, negative);
-pass('-1', -1, number, negative);
-pass("'-1.234'", -1.234, number, negative);
-pass('1.2', 1, nonZero, integer);
-fail('0', nonZero, integer);
-fail('', number, nonZero);
+test(fail, coerce(number), 'NaN');
+test(fail, coerce(number), 'Infinity');
+test(fail, coerce(number), "'foo'");
+test(fail, coerce(number), "''");
+test(fail, coerce(number), "'-1.234.5'");
+test(fail, coerce(positive), '+0');
+test(fail, coerce(negative), '-0');
+test(pass, coerce(number), '0o10', 8);
+test(pass, coerce(number), '0xff', 255);
+test(pass, coerce(number), '2e3', 2000);
+test(pass, coerce(number), '1n', 1);
+test(pass, coerce(number), '1.1', 1.1);
+test(pass, coerce(number, positive), '1.2', 1.2);
+test(pass, coerce(number), "'-1.234'", -1.234);
+test(pass, coerce(number), "'0'", 0);
+test(pass, coerce(number, negative), '-0.5', -0.5);
+test(pass, coerce(number, negative), '-1', -1);
+test(pass, coerce(number, negative), "'-2.345'", -2.345);
+test(pass, coerce(nonzero, integer), '1.2', 1);
+test(fail, coerce(nonzero, integer), '0');
+test(fail, coerce(number, nonzero), '');
 
 // limit
 const limit3 = limit(3);
 Object.defineProperty(limit3, 'name', { value: 'limit' });
-pass('5', 3, limit3);
-pass("'foobar'", 'foo', limit3);
-pass('[1, 2, 3, 4, 5]', [1, 2, 3], limit3);
-fail('({})', limit3);
-fail('null', limit3);
+test(pass, coerce(limit3), '5', 3);
+test(pass, coerce(limit3), "'foobar'", 'foo');
+test(pass, coerce(limit3), '[1, 2, 3, 4, 5]', [1, 2, 3]);
+test(fail, coerce(limit3), '({})');
+test(fail, coerce(limit3), '((null))');
 
 // split
 const splitBasic = split();
 Object.defineProperty(splitBasic, 'name', { value: 'split' });
-pass("'a,b,,,c d e foo'", ['a', 'b', 'c', 'd', 'e', 'foo'], splitBasic);
-pass("',,,,,,   , , '", [], splitBasic);
+test(pass, coerce(splitBasic), "'a,b,,,c d e foo'", ['a', 'b', 'c', 'd', 'e', 'foo']);
+test(pass, coerce(splitBasic), "',,,,,,   , , '", []);
 
 // within
 const withinList = within(['foo', 'bar']);
 Object.defineProperty(withinList, 'name', { value: 'within' });
-pass("'foo'", 'foo', withinList);
-fail("'baz'", withinList);
+test(pass, coerce(withinList), "'foo'", 'foo');
+test(fail, coerce(withinList), "'baz'");
 
 // email
-pass("' Foo@Bar.com'", 'foo@bar.com', email);
-pass("'foo '", 'foo', email); // this will also pass as the @ format is not validated
+test(pass, coerce(email), "' Foo@Bar.com'", 'foo@bar.com');
+test(pass, coerce(email), "'foo '", 'foo'); // this will also pass as the @ format is not validated
 
 // phone
-pass("'+1 (222) 333-4444x555'", '2223334444555', phone);
-pass("'+1 (222) 333-4444'", '2223334444', phone10);
-pass("'+1 (222) 333-4444'", '(222) 333-4444', prettyPhone);
-pass("'+1 (222) 333-4444x555'", '(222) 333-4444 ext 555', prettyPhone);
-fail("'+1 (222) 333-444'", phone10);
-fail("'+1 (222) 333-44444'", phone10);
+test(pass, coerce(phone), "'+1 (222) 333-4444x555'", '2223334444555');
+test(pass, coerce(prettyPhone), "'+1 (333) 444-5555'", '(333) 444-5555');
+test(pass, coerce(prettyPhone), "'+1 (444) 555-6666x777'", '(444) 555-6666 ext 777');
+test(pass, coerce(phone10), "'+1 (222) 333-4444'", '2223334444');
+test(fail, coerce(phone10), "'+1 (222) 333-444'");
+test(fail, coerce(phone10), "'+1 (222) 333-44444'");
 
 // date
-pass('1628623372929', new Date(1628623372929), date);
+test(pass, coerce(date), '1628623372929', new Date(1628623372929));
 
-// test coerce .or() with a default value
-test('coerce(…).to(…).or(0)', (t) => {
-  const defaultValue = 1;
-  t.is(coerce('foo').to(number).or(defaultValue), defaultValue);
+// test coerce with a default value
+test('coerce(…)(…, 0)', (t) => {
+  const defaultValue = undefined;
+  t.is(coerce(number)('foo', defaultValue), defaultValue);
 });
 
-// test coerce .or() with an Error returning function
-test('coerce(…).to(…).or(()=>Error))', (t) => {
-  const errorHandler = (error: string) => new Error(error);
-  t.throws(() => coerce('foo').to(number).or(errorHandler));
+// test coerce throw specific Error instance
+test('coerce(…)(…, new Error(…)))', (t) => {
+  const predefinedError = new Error('this is my error, there are many like it…');
+  t.throws(() => coerce(number)('foo', predefinedError), {
+    is: predefinedError,
+  });
 });
+
+// test coerce Error function factory
+test('coerce(…)(…, () => CustomError))', (t) => {
+  class CustomError extends Error { }
+  const errorHandler = (error: Error) => new CustomError(error.message);
+  t.throws(() => coerce(number)('foo', errorHandler), {
+    instanceOf: CustomError,
+  });
+});
+
+// const foo = coerce(number, date, string)([1], new Error('foo'));
+// const bar = coerce()([1]);
+// const bar2 = coerce()(1);
+// const baz = coerce(string, trim)(1);
+// const baz = coerce(...[string, number] as const)(1);
+// const c1 = coerce(number, string, date);
+// type foobar = ReturnType<typeof c1>;
+// const c2 = coerce(c1)('foo');
+// const c3 = c1('foo');
+// const d1 = coerceAlt('foo').to(string, number).or(undefined);
+
+// const foo = array(Symbol('foo'));
+// const foo = array(new Set(['foo']));
+// const foo = array(true);
+// const foo = array(null);
+// const foo = array(Buffer.from('foo'));
+// const foo = array('foo');
+// const foo = array(['foo', 1]);

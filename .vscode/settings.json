@@ -41,6 +41,7 @@
     "arrayify",
     "chainable",
     "codecov",
+    "nonstring",
     "o'donnel"
   ]
 }

@@ -1,22 +1,24 @@
 /**
  * Confirm string is _not_ empty
  */
-export const nonEmpty = (value: string) => {
+export const nonempty = (value: string) => {
   if (value === '') {
-    throw new Error('Empty string');
+    throw new TypeError('Empty string');
   }
   return value;
 };
+export const nonEmpty = nonempty;
 
 /**
  * Confirm input is _not_ 0
  */
-export const nonZero = (value: number) => {
+export const nonzero = (value: number) => {
   if (value !== 0) {
     return value;
   }
-  throw new Error(`“${value}” must be a non-zero number.`);
+  throw new TypeError(`“${value}” must be a non-zero number.`);
 };
+export const nonZero = nonzero;
 
 /**
  * Confirm that input is greater than 0
@@ -25,7 +27,7 @@ export const positive = (value: number) => {
   if (value > 0) {
     return value;
   }
-  throw new Error(`“${value}” is not a positive number.`);
+  throw new TypeError(`“${value}” is not a positive number.`);
 };
 
 /**
@@ -35,7 +37,7 @@ export const negative = (value: number) => {
   if (value < 0) {
     return value;
   }
-  throw new Error(`“${value}” is not a negative number.`);
+  throw new TypeError(`“${value}” is not a negative number.`);
 };
 
 /**
@@ -50,5 +52,5 @@ export const within = <T extends string | number | boolean | object>(list: T[]) 
     if (index >= 0) {
       return list[index];
     }
-    throw new Error(`“${value}” must be one of ${list}`);
+    throw new TypeError(`“${value}” must be one of ${list}`);
   };

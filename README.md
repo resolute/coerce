@@ -1,6 +1,6 @@
 # Coerce
 
-Coerce inputs to chainable types, formatters, sanitizers, and validators.
+Coerce input to types and formats with sanitizers and validators.
 
 ## Features
 
@@ -17,50 +17,65 @@ npm i @resolute/coerce
 ## Usage
 
 ```js
-import coerce, { string, trim, nonEmpty } from '@resolute/coerce';
-```
-trim a string and confirm it is not empty, `.or()` return undefined
-```js
-coerce(' foo ').to(string, trim, nonEmpty).or(undefined); // 'foo'
-coerce('     ').to(string, trim, nonEmpty).or(undefined); // undefined
+import coerce, { string, safe, spaces, trim, nonEmpty } from '@resolute/coerce';
+// sanitize input: removing dangerous characters, normalize double/half/utf
+// spaces, trim whitespace, and confirm result is non-empty
+const sanitize = coerce(string, safe, spaces, trim, nonEmpty);
 ```
 
-`.or()` throw an error
-```js
-coerce('     ').to(string, trim, nonEmpty).or(Error);
-// Uncaught Error: Unable to parse “undefined” as a string.
-```
-
-`.or()` throw a specific error
-```js
-coerce('     ').to(string, trim, nonEmpty).or(new Error('Unable to parse input.'));
-// Uncaught Error: Unable to parse input.
-```
+* failures **throw** a coerce TypeError
+  ```js
+  sanitize(' foo '); // 'foo'
+  sanitize('     '); // Uncaught TypeError
+  ```
+* failures **return** default value (never throws)
+  ```js
+  sanitize('     ', undefined); // undefined
+  ```
+* failures **throw** error instance
+  ```js
+  sanitize('     ', new Error('Oh no!')); // Uncaught Error: Oh no!
+  ```
+* failures **throw** error factory
+  ```js
+  class CustomError extends Error { }
+  const errorFactory = (error: Error) => new CustomError(error.message);
+  sanitize('     ', errorFactory); // Uncaught CustomError
+  ```
 
 ## Examples
 
-Confirm a string value is within a list (enum).
+Confirm a string value is within a list (enum)
 ```js
 import coerce, { within } from '@resolute/coerce';
-const list = ['foo', 'bar']; // any iterable type ok to use
+const inList = coerce(within(['foo', 'bar'])); // any iterable type ok to use
 try {
-  const item = coerce(input).to(within(list)).or(Error);
+  inList(input);
   // input is either 'foo' or 'bar'
 } catch (error) {
   // input was not 'foo' or 'bar'
 }
 ```
 
-Convert any iterable (except strings) to an array. Non-iterables return an array
-of length=1 containing the non-iterable.
+Convert anything to an array
 ```js
 import coerce, { array } from '@resolute/coerce';
-const arrayify = (input) => coerce(input).to(array).or(Error);
-arrayify(new Map([[1, 1], [2, 2]]); // [[1, 1], [2, 2]]
-arrayify(new Set([1, 2, 3])); // [1, 2, 3]
-arrayify([1, 2, 3]); // [1, 2, 3] (no change)
-arrayify(1); // [1]
-arrayify('123'); // ['123'] (NOT ['1', '2', '3'] even though Strings are iterable)
-arrayify(Buffer.from('123')); // [49, 50, 51] // Buffer char codes
-arrayify(null); // [null]
+const arrayify = coerce(array);
 ```
+* Iterables (except strings) → `Array`
+  ```js
+  arrayify(new Map([[1, 1], [2, 2]]); // [[1, 1], [2, 2]]
+  arrayify(new Set([1, 2, 3])); // [1, 2, 3]
+  arrayify(Buffer.from('123')); // [49, 50, 51] (char codes)
+  // even though Strings are iterable, they are NOT broken apart
+  arrayify('123'); // ['123']
+  ```
+* Non-iterables (including strings) → `[item]` (wrapped in array)
+  ```js
+  arrayify(1); // [1]
+  arrayify(null); // [null]
+  ```
+* Arrays → `Array` (no change)
+  ```js
+  arrayify([1, 2, 3]); // [1, 2, 3]
+  ```

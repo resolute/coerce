@@ -1,57 +1,67 @@
-import type { To } from './types.js';
+import type { Coerce } from './types.js';
 
 /**
- * Pipe/flow/chain the input and output of each function
+ * 1. throw Error; or
+ * 2. throw error function factory; or
+ * 3. return the `otherwise` value
  */
-const pipe = <S extends (value: any) => any>(
-  value: unknown,
-  functions: S[],
-  index: number,
-): ReturnType<S> => {
-  if (index === functions.length) {
-    return value as ReturnType<S>;
-  }
-  const newValue = functions[index](value);
-  return pipe(newValue, functions, index + 1);
-};
-
-/**
- * Throw Error or throw user-passed function or return a default value
- */
-const handleFailure = <U>(otherwise: U, error: Error) => {
+const failure = <U>(error: Error, otherwise: U) => {
   if (typeof otherwise === 'function') {
     throw otherwise(error);
   }
   if (typeof otherwise === 'object' && otherwise instanceof Error) {
     throw otherwise;
   }
-  return otherwise as Exclude<U, Function | Error>;
+  return otherwise;
 };
 
 /**
- * Coerce a value `.to()` specified type `.or()` on failure return a default
- * value or throw an `Error`.
+ * Pipe the input through coerce functions
  */
-export const coerce = <I>(value: I): To<I> => ({
-  /**
-   * `.to()` one or many sanitizer functions
-   */
-  to: (...sanitizers: Array<(value: any) => any>) => ({
-    /**
-     * `.or()` return a default value, throw a specific `Error`, or throws a the
-     * `Error` returned from a function.
-     */
-    or: <U>(otherwise: U) => {
-      try {
-        return pipe(value, sanitizers, 0);
-      } catch (error) {
-        return handleFailure(otherwise, error);
-      }
-    },
-  }),
-});
+const pipe = <V, C extends (value: any) => any>(value: V, coercer: C) =>
+  coercer(value);
+
+/**
+ * Handles issues where passing otherwise: undefined triggers the default
+ * TypeError value. This workaround determines if the default otherwise:
+ * TypeError should be used based on the argument count passed to the function.
+ * This is instead of simply using a default parameter value, which would not
+ * work in the case where undefined is passed.
+ */
+const params = (args: unknown[]) => {
+  if (args.length === 1) {
+    return [args[0] as unknown, TypeError] as const;
+  }
+  return args;
+};
+
+/**
+* Coerce a value
+* `coerce(...coercers)(value[, default])`
+*
+* @example
+* // trim a string and confirm it is not empty
+* const trimCheckEmpty = coerce(string, trim, nonEmpty);
+*
+* trimCheckEmpty(' foo '); // 'foo'
+* trimCheckEmpty('     '); // Error
+*
+* // alternatively, return undefined instead of throwing error
+* trimCheckEmpty('     ', undefined); // undefined
+*
+*/
+export const coerce: Coerce = (...coercers: any[]) =>
+  (...args: unknown[]) => {
+    const [value, otherwise] = params(args);
+    try {
+      return coercers.reduce(pipe, value);
+    } catch (error) {
+      return failure(error, otherwise);
+    }
+  };
 
 export default coerce;
 export * from './primitive.js';
 export * from './validator.js';
 export * from './mutator.js';
+export type { Coerce, Coercer } from './types.js';

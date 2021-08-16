@@ -1,4 +1,5 @@
-import { nonEmpty, nonZero } from './validator.js';
+import { coerce } from './index.js';
+import { nonempty, nonZero } from './validator.js';
 
 /**
  * Coerce value to primitive `string`
@@ -10,8 +11,16 @@ export const string = (value: string | number | bigint) => {
   if ((typeof value === 'number' && Number.isFinite(value)) || typeof value === 'bigint') {
     return value.toString();
   }
-  throw new Error(`Unable to parse “${value}” as a string.`);
+  throw new TypeError(`Unable to parse “${value}” as a string.`);
 };
+
+export const nonstring = <T>(value: T) => {
+  if (typeof value === 'string') {
+    throw new TypeError(`${value} is a string.`);
+  }
+  return value as Exclude<T, string>;
+};
+export const notString = nonstring;
 
 /**
  * Coerce value to `number`
@@ -21,7 +30,7 @@ export const number = (value: string | number | bigint): number => {
     return value as number;
   }
   // remove everything except characters allowed in a number
-  return number(Number(nonEmpty(string(value).replace(/[^0-9oex.-]/g, ''))));
+  return number(Number(nonempty(string(value).replace(/[^0-9oex.-]/g, ''))));
 };
 
 /**
@@ -36,14 +45,14 @@ export const date = (value: number | string | Date) => {
 /**
  * Boolean
  */
-interface Boolean {
+interface CoerceBoolean {
   (): (value: unknown) => true | false;
   <T>(truthy: T): (value: unknown) => T | false;
   <T, F>(truthy: T, falsey: F): (value: unknown) => T | F;
   <T, F, N>(truthy: T, falsey: F, nully: N): (value: unknown) => T | F | N;
   <T, F, N, U>(truthy: T, falsey: F, nully: N, undefy: U): (value: unknown) => T | F | N | U;
 }
-export const boolean: Boolean =
+export const boolean: CoerceBoolean =
   (truthy: any = true, falsy: any = false, nully: any = falsy, undefy: any = falsy) =>
     (value: unknown) => {
       switch (typeof value) {
@@ -73,24 +82,33 @@ export const boolean: Boolean =
       return value ? truthy : falsy;
     };
 
-const isIterable = <T>(value: Iterable<T> | any): value is Iterable<T> => {
+/**
+ * Confirm `value` is Iterable
+ */
+export const iterable = <T>(value: Iterable<T> | T) => {
+  // export const iterable:CoerceIterable =
+  // <T, U extends Exclude<any, Iterable<any>>>(value: Iterable<T> | U) => {
   if (typeof value === 'object' && value && typeof value[Symbol.iterator] === 'function') {
-    return true;
+    // if (isIterable(value)) {
+    return value as Iterable<T>;
   }
-  return false;
+  throw new Error(`${value} is not iterable`);
 };
 
 /**
-* `value` as an array if not an array
-*/
-export const array = <T>(value: T | T[] | Iterable<T>) => {
-  if (Array.isArray(value)) {
-    return value;
+ * `value` as an array if not an array
+ */
+interface CoerceArray {
+  <T>(input: Iterable<T>): T[];
+  <T>(input: T): T[];
+}
+export const array: CoerceArray = <T, U>(value: Iterable<T> | U) => {
+  try {
+    // a `string` _is_ Iterable, but we do not want to return an array of
+    // characters
+    const iterableValue = coerce(nonstring, iterable)(value);
+    return [...iterableValue];
+  } catch {
+    return [value] as U[];
   }
-  // a `string` _is_ Iterable, but we do not want to return an array of
-  // characters
-  if (typeof value !== 'string' && isIterable(value)) {
-    return [...value];
-  }
-  return [value];
 };

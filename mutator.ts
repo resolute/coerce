@@ -1,4 +1,4 @@
-import { nonEmpty } from './validator.js';
+import { nonempty } from './validator.js';
 
 /**
  * Remove dangerous characters from string
@@ -129,7 +129,7 @@ export const proper = (value: string) =>
  * Format email addresses
  */
 export const email = (value: string) =>
-  nonEmpty(value.toLowerCase().replace(/\s+/g, ''));
+  nonempty(value.toLowerCase().replace(/\s+/g, ''));
 
 /**
 * Strip all non-digit characters from string
@@ -142,7 +142,7 @@ export const digits = (value: string) => value.replace(/[^\d]/g, '');
 export const phone = (value: string) => {
   const onlyDigits = digits(value).replace(/^[01]+/, '');
   if (onlyDigits.length < 10) {
-    throw new Error('Invalid US phone number.');
+    throw new TypeError('Invalid US phone number.');
   }
   return onlyDigits;
 };
@@ -153,7 +153,7 @@ export const phone = (value: string) => {
 export const phone10 = (value: string) => {
   const valid = phone(value);
   if (valid.length !== 10) {
-    throw new Error('Invalid US 10-digit phone number.');
+    throw new TypeError('Invalid US 10-digit phone number.');
   }
   return valid;
 };
@@ -175,7 +175,7 @@ export const prettyPhone = (value: string) => {
 export const postalCodeUs5 = (value: string) => {
   const code = digits(value).slice(0, 5);
   if (code.length !== 5) {
-    throw new Error('Invalid US postal code');
+    throw new TypeError('Invalid US postal code');
   }
   return code;
 };
@@ -204,7 +204,7 @@ export const limit = (max: number) =>
     if (Array.isArray(value)) {
       return value.slice(0, max) as T;
     }
-    throw new Error(`Unable to apply a max of ${max} to ${value}`);
+    throw new TypeError(`Unable to apply a max of ${max} to ${value}`);
   };
 
 /**

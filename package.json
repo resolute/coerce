@@ -1,7 +1,7 @@
 {
   "name": "@resolute/coerce",
   "version": "0.0.0",
-  "description": "Coerce inputs to chainable types, formatters, sanitizers, and validators.",
+  "description": "Coerce input to types and formats with sanitizers and validators.",
   "type": "module",
   "main": "./",
   "types": "./",
