@@ -25,7 +25,7 @@ export const spaces = (value: string) =>
   value
     .replace(
       // eslint-disable-next-line no-irregular-whitespace
-      /[\u00A0\u1680​\u180E\u2000-\u200B\u202F\u205F​\u3000\uFEFF]/g,
+      /[\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g,
       ' ',
     )
     .replace(/\s+/g, ' ');
