@@ -56,6 +56,9 @@
   },
   "license": "ISC",
   "ava": {
+    "files": [
+      "!**/*.d.ts"
+    ],
     "extensions": {
       "ts": "module"
     },
