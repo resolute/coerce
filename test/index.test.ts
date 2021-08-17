@@ -168,22 +168,3 @@ test('coerce(…)(…, () => CustomError))', (t) => {
     instanceOf: CustomError,
   });
 });
-
-// const foo = coerce(number, date, string)([1], new Error('foo'));
-// const bar = coerce()([1]);
-// const bar2 = coerce()(1);
-// const baz = coerce(string, trim)(1);
-// const baz = coerce(...[string, number] as const)(1);
-// const c1 = coerce(number, string, date);
-// type foobar = ReturnType<typeof c1>;
-// const c2 = coerce(c1)('foo');
-// const c3 = c1('foo');
-// const d1 = coerceAlt('foo').to(string, number).or(undefined);
-
-// const foo = array(Symbol('foo'));
-// const foo = array(new Set(['foo']));
-// const foo = array(true);
-// const foo = array(null);
-// const foo = array(Buffer.from('foo'));
-// const foo = array('foo');
-// const foo = array(['foo', 1]);
