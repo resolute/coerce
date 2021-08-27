@@ -56,7 +56,7 @@ export const coerce: Coerce = (...coercers: any[]) =>
     try {
       return coercers.reduce(pipe, value);
     } catch (error) {
-      return failure(error, otherwise);
+      return failure(error as Error, otherwise);
     }
   };
 
