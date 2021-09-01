@@ -6,7 +6,8 @@
   "main": "./index.cjs",
   "types": "./",
   "files": [
-    "*.js",
+    "*.cjs",
+    "*.mjs",
     "*.d.ts"
   ],
   "exports": {
