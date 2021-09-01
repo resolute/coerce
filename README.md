@@ -6,7 +6,7 @@ Coerce input to types and formats with sanitizers and validators.
 
 * **TypeScript** friendly
 * Supports **tree-shaking** from Rollup, esbuild, etc.
-* **ES Module** only (no CommonJS support 😀/🙁)
+* **ES Module** and CommonJS support
 
 ## Installation
 

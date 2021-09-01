@@ -34,7 +34,6 @@
     "@typescript-eslint/no-unused-vars": [
       "error"
     ],
-    "operator-linebreak": "off",
     "no-restricted-syntax": [
       "error",
       {
@@ -48,6 +47,19 @@
       {
         "selector": "WithStatement",
         "message": "`with` is disallowed in strict mode because it makes code impossible to predict and optimize."
+      }
+    ],
+    "operator-linebreak": "off",
+    "spaced-comment": [
+      "error",
+      "always",
+      {
+        "line": {
+          "markers": [
+            "#region",
+            "#endregion"
+          ]
+        }
       }
     ]
   }

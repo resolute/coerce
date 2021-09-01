@@ -3,17 +3,22 @@
   "version": "0.0.2",
   "description": "Coerce input to types and formats with sanitizers and validators.",
   "type": "module",
-  "main": "./",
+  "main": "./index.cjs",
   "types": "./",
   "files": [
     "*.js",
     "*.d.ts"
   ],
+  "exports": {
+    "import": "./index.mjs",
+    "require": "./index.cjs",
+    "default": "./index.mjs"
+  },
   "scripts": {
-    "build": "npm run clean && tsc && prettier --write *.js *.d.ts && (eslint --fix *.js > /dev/null 2>&1; true)",
+    "build": "npm run clean && tsc -m commonjs && mv index.js index.cjs && tsc && mv index.js index.mjs && prettier --write *.cjs *.mjs *.d.ts && (eslint --fix *.js *.cjs *.mjs > /dev/null 2>&1; true)",
     "release": "np",
     "prepublishOnly": "npm test && npm run build",
-    "clean": "del-cli *.js *.js.map *.d.ts test/*.js test/*.js.map test/*.d.ts",
+    "clean": "del-cli *.js *.cjs *.mjs *.js.map *.d.ts test/*.js test/*.js.map test/*.d.ts",
     "test": "c8 ava"
   },
   "repository": {

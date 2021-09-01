@@ -40,12 +40,15 @@
   },
   "cSpell.words": [
     "D’Xx",
+    "Mutators",
     "O’Donnel",
     "O’Xx",
     "arrayify",
     "chainable",
     "codecov",
+    "endregion",
     "nonstring",
-    "o'donnel"
+    "o'donnel",
+    "ucfirst"
   ]
 }
