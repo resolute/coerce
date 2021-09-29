@@ -62,6 +62,53 @@ export const coerce: Coerce = (...coercers: any[]) =>
   };
 //#endregion
 
+//#region Type Guards
+// -----------------------------------------------------------------------------
+
+/**
+ * Type guard string
+ */
+export const isString = (value: unknown): value is string =>
+  typeof value === 'string';
+
+/**
+ * Type guard number
+ */
+export const isNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+/**
+ * Type guard bigint
+ */
+export const isBigInt = (value: unknown): value is bigint =>
+  typeof value === 'bigint';
+
+/**
+ * Type guard function
+ */
+export const isFunction = (value: unknown): value is Function =>
+  typeof value === 'function';
+
+/**
+ * Type guard object
+ */
+export const isObject = (value: unknown): value is object =>
+  typeof value === 'object' && value !== null;
+
+/**
+ * Type guard array
+ */
+export const isArray = <T>(value: unknown): value is Array<T> =>
+  Array.isArray(value);
+
+/**
+ * Type guard against `undefined` and `null`
+ */
+export const isDefined = <T>(value: T): value is NonNullable<T> =>
+  typeof value !== 'undefined' && value !== null;
+
+//#endregion
+
 //#region Validators
 // -----------------------------------------------------------------------------
 
@@ -108,6 +155,47 @@ export const negative = (value: number) => {
 };
 
 /**
+ * Confirm value is defined
+ */
+export const defined = <T>(value: T) => {
+  if (isDefined(value)) {
+    return value;
+  }
+  throw new TypeError(`Unexpected ${value}`);
+};
+
+/**
+ * Confirm value is an object
+ */
+export const object = <T>(value: T) => {
+  if (isObject(value)) {
+    return value;
+  }
+  throw new TypeError(`${value} is not an object.`);
+};
+
+/**
+ * Confirm value is a function
+ */
+export const func = <T>(value: T) => {
+  if (isFunction(value)) {
+    return value;
+  }
+  throw new TypeError(`${value} is not a function.`);
+};
+
+/**
+ * Confirm value is `instanceof` …
+ */
+export const instance = <T extends {} = {}>(type: new (...args: any[]) => T) =>
+  (value: unknown) => {
+    if (value instanceof func(type)) {
+      return value;
+    }
+    throw new TypeError(`${value} is not an instance of ${type.name || type}.`);
+  };
+
+/**
  * Confirm the `value` is within `list` (a.k.a. Enum)
  */
 export const within = <T extends string | number | boolean | object>(list: T[]) =>
@@ -131,17 +219,17 @@ export const within = <T extends string | number | boolean | object>(list: T[]) 
  * Coerce value to primitive `string`
  */
 export const string = (value: string | number | bigint) => {
-  if (typeof value === 'string') {
+  if (isString(value)) {
     return value;
   }
-  if ((typeof value === 'number' && Number.isFinite(value)) || typeof value === 'bigint') {
+  if ((isNumber(value) && Number.isFinite(value)) || isBigInt(value)) {
     return value.toString();
   }
   throw new TypeError(`Unable to parse “${value}” as a string.`);
 };
 
 export const nonstring = <T>(value: T) => {
-  if (typeof value === 'string') {
+  if (isString(value)) {
     throw new TypeError(`${value} is a string.`);
   }
   return value as Exclude<T, string>;
@@ -152,8 +240,8 @@ export const nonString = nonstring;
  * Coerce value to `number`
  */
 export const number = (value: string | number | bigint): number => {
-  if (Number.isFinite(value)) {
-    return value as number;
+  if (isNumber(value)) {
+    return value;
   }
   // remove everything except characters allowed in a number
   return number(Number(nonempty(string(value).replace(/[^0-9oex.-]/g, ''))));
@@ -163,9 +251,9 @@ export const number = (value: string | number | bigint): number => {
  * Coerce value to a valid `Date`
  */
 export const date = (value: number | string | Date) => {
-  const object = new Date(value);
-  nonZero(object.valueOf());
-  return object;
+  const dateObject = new Date(value);
+  nonZero(dateObject.valueOf());
+  return dateObject;
 };
 
 /**
@@ -212,10 +300,13 @@ export const boolean: CoerceBoolean =
  * Confirm `value` is Iterable
  */
 export const iterable = <T>(value: Iterable<T> | T) => {
-  if (typeof value === 'object' && value && typeof value[Symbol.iterator] === 'function') {
+  try {
+    object(value);
+    func(value[Symbol.iterator]);
     return value as Iterable<T>;
+  } catch {
+    throw new Error(`${value} is not iterable`);
   }
-  throw new Error(`${value} is not iterable`);
 };
 
 /**
@@ -437,13 +528,13 @@ export const limit = (max: number) =>
    * `array`
    */
   <T extends number | string | unknown[]>(value: T) => {
-    if (typeof value === 'number') {
+    if (isNumber(value)) {
       return Math.min(value, max) as T;
     }
-    if (typeof value === 'string') {
+    if (isString(value)) {
       return value.slice(0, max) as T;
     }
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
       return value.slice(0, max) as T;
     }
     throw new TypeError(`Unable to apply a max of ${max} to ${value}`);

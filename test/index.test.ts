@@ -1,10 +1,14 @@
+/* eslint-disable max-classes-per-file */
 /* eslint-disable no-eval */
 import test, { Macro } from 'ava';
 import {
   coerce,
   string, safe, nonempty, spaces, trim, quotes, proper, postalCodeUs5,
+  defined,
+  instance,
   boolean,
   array,
+  object,
   number, positive, negative,
   limit, split, within, email, phone, phone10, prettyPhone, integer, nonzero, date,
 } from '../index.js';
@@ -16,10 +20,16 @@ pass.title = (providedTitle = '', _command, input, expected) =>
   `${providedTitle} ${input} = ${expected} (${typeof expected})`.trim();
 
 const fail: Macro<any> = (t, command, input) => {
-  t.throws(() => { command(eval(input)); }, { instanceOf: Error });
+  t.throws(() => { command(eval(input)); }, { instanceOf: TypeError });
 };
 fail.title = (providedTitle = '', _command, input) =>
   `${providedTitle} ${input} TypeError`.trim();
+
+const passInstance: Macro<any, any> = (t, command, input, expected) => {
+  t.true(command(eval(input)) instanceof expected);
+};
+passInstance.title = (providedTitle = '', _command, input, expected) =>
+  `${providedTitle} ${input} instanceOf ${expected}`.trim();
 
 // string
 test(pass, coerce(string), "'1'", '1');
@@ -61,6 +71,10 @@ test(pass, coerce(postalCodeUs5), "'07417'", '07417');
 test(pass, coerce(postalCodeUs5), "'07417-1111'", '07417');
 test(fail, coerce(postalCodeUs5), "'0741'");
 test(fail, coerce(postalCodeUs5), '10001'); // numbers not allowed because leading 0’s mess things up
+
+// defined
+test(pass, coerce(defined), "'I am defined'", 'I am defined');
+test(fail, coerce(defined), "('I am _not_ defined', undefined)", undefined);
 
 // boolean
 const trueOrFalse = boolean();
@@ -109,6 +123,20 @@ test(pass, coerce(number, negative), "'-2.345'", -2.345);
 test(pass, coerce(nonzero, integer), '1.2', 1);
 test(fail, coerce(nonzero, integer), '0');
 test(fail, coerce(number, nonzero), '');
+
+// object
+test(pass, coerce(object), '({is: "object"})', { is: 'object' });
+test(fail, coerce(object), '"not an object"');
+
+// instance
+class Nameless {
+  // @ts-ignore
+  static name = undefined;
+}
+test(passInstance, coerce(instance(Date)), 'new Date(1)', Date);
+test(fail, coerce(instance(Error)), 'new Date(2)');
+test(fail, coerce(instance(Nameless)), 'new Date(3)');
+test(fail, coerce(instance({ foo: 'bar' } as unknown as new () => {})), 'new Date(4)');
 
 // limit
 const limit3 = limit(3);
