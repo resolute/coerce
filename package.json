@@ -1,6 +1,6 @@
 {
   "name": "@resolute/coerce",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Coerce input to types and formats with sanitizers and validators.",
   "type": "module",
   "main": "./index.cjs",
