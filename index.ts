@@ -7,10 +7,12 @@
  * 3. return the `otherwise` value
  */
 const failure = <U>(error: Error, otherwise: U) => {
-  if (typeof otherwise === 'function') {
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  if (isFunction(otherwise)) {
     throw otherwise(error);
   }
-  if (typeof otherwise === 'object' && otherwise instanceof Error) {
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  if (isInstance(Error)(otherwise)) {
     throw otherwise;
   }
   return otherwise;
@@ -107,6 +109,13 @@ export const isArray = <T>(value: unknown): value is Array<T> =>
 export const isDefined = <T>(value: T): value is NonNullable<T> =>
   typeof value !== 'undefined' && value !== null;
 
+/**
+ * Type guard instance
+ */
+export const isInstance = <T extends Constructor>(constructor: T) =>
+  (value: unknown): value is InstanceType<T> =>
+    isFunction(constructor) && value instanceof constructor;
+
 //#endregion
 
 //#region Validators
@@ -116,10 +125,10 @@ export const isDefined = <T>(value: T): value is NonNullable<T> =>
  * Confirm string is _not_ empty
  */
 export const nonempty = (value: string) => {
-  if (value === '') {
-    throw new TypeError('Empty string');
+  if (value !== '') {
+    return value;
   }
-  return value;
+  throw new TypeError('Empty string');
 };
 export const nonEmpty = nonempty;
 
@@ -187,12 +196,12 @@ export const func = <T>(value: T) => {
 /**
  * Confirm value is `instanceof` …
  */
-export const instance = <T extends {} = {}>(type: new (...args: any[]) => T) =>
+export const instance = <T extends Constructor>(constructor: T) =>
   (value: unknown) => {
-    if (value instanceof func(type)) {
+    if (isInstance(constructor)(value)) {
       return value;
     }
-    throw new TypeError(`${value} is not an instance of ${type.name || type}.`);
+    throw new TypeError(`${value} is not an instance of ${constructor.name || constructor}.`);
   };
 
 /**
@@ -229,10 +238,10 @@ export const string = (value: string | number | bigint) => {
 };
 
 export const nonstring = <T>(value: T) => {
-  if (isString(value)) {
-    throw new TypeError(`${value} is a string.`);
+  if (!isString(value)) {
+    return value as Exclude<T, string>;
   }
-  return value as Exclude<T, string>;
+  throw new TypeError(`${value} is a string.`);
 };
 export const nonString = nonstring;
 
@@ -305,7 +314,7 @@ export const iterable = <T>(value: Iterable<T> | T) => {
     func(value[Symbol.iterator]);
     return value as Iterable<T>;
   } catch {
-    throw new Error(`${value} is not iterable`);
+    throw new Error(`${value} is not iterable.`);
   }
 };
 
@@ -474,10 +483,10 @@ export const digits = (value: string) => value.replace(/[^\d]/g, '');
  */
 export const phone = (value: string) => {
   const onlyDigits = digits(value).replace(/^[01]+/, '');
-  if (onlyDigits.length < 10) {
-    throw new TypeError('Invalid US phone number.');
+  if (onlyDigits.length >= 10) {
+    return onlyDigits;
   }
-  return onlyDigits;
+  throw new TypeError('Invalid US phone number.');
 };
 
 /**
@@ -485,10 +494,10 @@ export const phone = (value: string) => {
  */
 export const phone10 = (value: string) => {
   const valid = phone(value);
-  if (valid.length !== 10) {
-    throw new TypeError('Invalid US 10-digit phone number.');
+  if (valid.length === 10) {
+    return valid;
   }
-  return valid;
+  throw new TypeError('Invalid US 10-digit phone number.');
 };
 
 /**
@@ -507,10 +516,10 @@ export const prettyPhone = (value: string) => {
  */
 export const postalCodeUs5 = (value: string) => {
   const code = digits(value).slice(0, 5);
-  if (code.length !== 5) {
-    throw new TypeError('Invalid US postal code');
+  if (code.length === 5) {
+    return code;
   }
-  return code;
+  throw new TypeError('Invalid US postal code');
 };
 
 /**
@@ -563,6 +572,7 @@ export const split = (separator = /[,\r\n\s]+/g) =>
 //#region Types
 // -----------------------------------------------------------------------------
 
+export type Constructor = (new (...args: any[]) => any);
 export interface Coercer<O = never> {
   <E>(value: unknown, otherwise: E): O | Exclude<E, Error | Function>;
   <I>(value: I): [O] extends [never] ? I : O;
